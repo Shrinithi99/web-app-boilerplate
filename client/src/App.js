@@ -1,24 +1,23 @@
 import React, { Component } from 'react';
 import './App.css';
-import axios from 'axios'
+import AddOrUpdateUser from './AddOrUpdateUser.js';
+import FindUser from './FindUser';
+import GetAllUsers from './GetAllUsers';
+import DeleteUser from './DeleteUser';
 
 class App extends Component {
-  state = {
-    response: {}
-  };
-  
-  componentDidMount() {
-    axios.get('/api/v1/say-something').then((res) => {
-      const response = res.data;
-      this.setState({response});
-    });
+  constructor() {
+    super();
+    
   }
-
+    
   render() {
     return (
       <div className="App">
-        <h1>Hello from the frontend!</h1>
-        <h1>{this.state.response.body}</h1>
+        <AddOrUpdateUser/>
+        <FindUser/>
+       <DeleteUser/>
+       <GetAllUsers/>
       </div>
     );
   }
