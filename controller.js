@@ -1,75 +1,118 @@
 const Hapi = require('hapi');
 const fs = require('fs');
+const { Client } = require('elasticsearch');
+const { report } = require('process');
+const client = new Client({ node: 'http://localhost:9200' });
+const id=0;
 //asyn function to fetch user data
 const fetchUser = async (email) => {
-  
-    var data=fs.readFileSync('./users.json');
-    var response='found none';
-    let jsondata = JSON.parse(data);
-    Object.entries(jsondata).forEach((entry) => {
-      const [key, value] = entry;
-      if (value.email==email)
-      { response=`name:${value.firstname} ${value.lastname}, Birthdate:${value.birthdate}, Age:${value.age}, Phonenumber:${value.phonenumber}`;}
-    });
+  var response={};
+
+    await client.search({
+      index: 'user',
+      type: '_doc',
+      body: {
+        query: {
+            term: {"email.keyword": email}
+        }
+    }
+  }).then(function(resp) {
+      response=resp.hits.hits[0]._source;console.log(response);
+  }).catch(err=>{
+    response={};
+  });
+
     return response;
 };
 //async function to get all user
 const getAllUsers = async () => {
+  var response={};
+
+    await client.search({
+      index: 'user',
+      type: '_doc',
+      body: {
+        query: {
+            match_all:{}
+        }
+    }
+  }).then(function(resp) {
+      response=resp.hits.hits;
+  }).catch(err=>{
+    response={};
+  });
+
+    return response;
   
-  var data=fs.readFileSync('./users.json');
-  return data;
 };
 // async function to add or update data
 const addOrUpdateUsers =  async (payload)=>{var response='';
-  var data=fs.readFileSync('./users.json');
-    
-    var databases = JSON.parse(data);var flag=0;
-    Object.entries(databases).forEach((entry) => {
-      const [key, value] = entry;
-      if (value.email==payload.email)
-      { flag=1;value.firstname=payload.firstname;
-        value.lastname=payload.lastname;
-        value.birthdate=payload.birthdate;
-        value.age=payload.age;
-        value.phonenumber=payload.phonenumber;
-        response=`updated ${payload.firstname} ${payload.lastname}`;}
-    });
-    let wholeArray = Object.keys(databases).map(key => databases[key]);
-    if(flag==0){
-    wholeArray.push({
-            firstname: `${payload.firstname}`,
-            lastname: `${payload.lastname}`,
-            email: `${payload.email}`,
-            birthdate:`${payload.birthdate}`,
-            age:`${payload.age}`,
-            phonenumber:`${payload.phonenumber}`
-    });response=`added ${payload.firstname} ${payload.lastname}`;}
-    const jsondata=JSON.stringify(wholeArray);
-    fs.writeFile('./users.json', jsondata, (err) => {
-        if (err) {
-            console.log(`Error writing file: ${err}`);
+  
+    await client.search({
+      index: 'user',
+      type: '_doc',
+      body: {
+        query: {
+            term: {"email.keyword": payload.email}
         }
-    });
-  return response;
+    }
+  }).then(async (resp)=>{
+      if(resp.hits.total.value==0){
+        await client.index({
+          index:'user',
+          body:payload
+        }).then(resp=>{
+          response=`added ${payload.firstname} ${payload.lastname}`;
+        }).catch(err=>{
+          response='error adding';
+        });
+      }else{
+        await client.updateByQuery({
+          index: 'user',
+          refresh: true,
+          body: {
+            script: {
+              "inline": `ctx._source.firstname ="${payload.firstname}";ctx._source.lastname = "${payload.lastname}";ctx._source.birthdate = "${payload.birthdate}";
+              ctx._source.age = "${payload.age}";  
+              ctx._source.phonenumber = "${payload.phonenumber}";`
+            },
+            query: {
+              term: {"email.keyword": payload.email}
+            }
+          }
+        }).then(resp=>{
+          response=`updated ${payload.firstname} ${payload.lastname}`;
+        }).catch(err=>{
+         reponse="error updating......";
+        });
+      }
+  }).catch(err=>{
+    
+  });
+    
+  return response; 
+ 
 };
 // async function to delete data 
 const deleteUsers = async (email) => {
-  
-  var data=fs.readFileSync('./users.json');
   var response='deleted none';
-  let database = JSON.parse(data);
-  Object.entries(database).forEach((entry) => {
-    const [key, value] = entry;
-    if (value.email==email)
-    { response=`deleted ${value.firstname} ${value.lastname}`;
-      database.splice(key,1);    }
-  });
-  const jsondata=JSON.stringify(database);
-  fs.writeFile('./users.json', jsondata, (err) => {
-    if (err) {
-        console.log(`Error writing file: ${err}`);
+
+ await client.deleteByQuery({
+  index: 'user',
+  type: '_doc',
+  body: {
+    query: {
+        term: {"email.keyword": email}
     }
- });
-  return response;
+}
+}).then(function(resp) {
+ response='deleted user';
+}).catch(err=>{
+respoonse='error deleting user';
+});
+
+return response;
 };
+
+
 module.exports = { deleteUsers, addOrUpdateUsers, fetchUser, getAllUsers };

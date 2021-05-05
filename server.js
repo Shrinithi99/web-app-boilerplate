@@ -1,5 +1,6 @@
 const Hapi = require('hapi');
 const Joi = require('joi');
+
 const JoiSchema= require('./JoiSchema.js');
 const controller=require('./controller.js')
 const server = Hapi.server({

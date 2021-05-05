@@ -41,11 +41,11 @@ class GetAllUsers extends Component {
         defaultCollapseIcon={<ExpandMoreIcon />}
         defaultExpandIcon={<ChevronRightIcon />}
         >
-        <TreeItem nodeId="1" label={user.email} >
-        <TreeItem nodeId="2" label={"name:"+user.firstname+user.lastname} />
-        <TreeItem nodeId="3" label={"birthdate:"+user.birthdate} />
-        <TreeItem nodeId="4" label={"age:"+user.age}/>
-        <TreeItem nodeId="5" label={"phonenumber:"+user.phonenumber}/>
+        <TreeItem nodeId="1" label={user._source.email} >
+        <TreeItem nodeId="2" label={"name:"+user._source.firstname+user._source.lastname} />
+        <TreeItem nodeId="3" label={"birthdate:"+user._source.birthdate} />
+        <TreeItem nodeId="4" label={"age:"+user._source.age}/>
+        <TreeItem nodeId="5" label={"phonenumber:"+user._source.phonenumber}/>
         </TreeItem>
         </TreeView>
           )) 
